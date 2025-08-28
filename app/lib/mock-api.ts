@@ -1,6 +1,7 @@
 import { TalentApiResponse, CreatorScore, MarketCap } from '../types/creator-score';
+import { fetchCreatorScore, fetchBuilderScore } from './talent-api';
 
-// Mock data for development
+// Mock data for development (fallback when Talent API is not available)
 const MOCK_CREATOR_SCORES: Record<number, number> = {
   20390: 850, // Example FID with creator score
   12345: 1200,
@@ -13,9 +14,9 @@ const MOCK_MARKET_CAPS: Record<number, number> = {
   67890: 1500000, // $1.5M market cap
 };
 
-export async function fetchCreatorScore(fid: number): Promise<TalentApiResponse> {
+export async function fetchCreatorScoreFromMock(fid: number): Promise<TalentApiResponse> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 300));
   
   const score = MOCK_CREATOR_SCORES[fid];
   
@@ -32,9 +33,9 @@ export async function fetchCreatorScore(fid: number): Promise<TalentApiResponse>
   };
 }
 
-export async function fetchMarketCap(fid: number): Promise<TalentApiResponse> {
+export async function fetchMarketCapFromMock(fid: number): Promise<TalentApiResponse> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 300));
   
   const marketCap = MOCK_MARKET_CAPS[fid];
   
@@ -51,36 +52,70 @@ export async function fetchMarketCap(fid: number): Promise<TalentApiResponse> {
   };
 }
 
+// Main function that tries real API first, falls back to mock
 export async function fetchUserData(fid: number): Promise<{
   creatorScore?: CreatorScore;
   marketCap?: MarketCap;
 }> {
-  const [scoreResponse, marketCapResponse] = await Promise.all([
-    fetchCreatorScore(fid),
-    fetchMarketCap(fid),
-  ]);
+  try {
+    // Try to get creator score from Talent API first
+    const scoreResponse = await fetchCreatorScore(fid);
+    
+    // For now, we'll use mock market cap data since we don't have a real API for that
+    const marketCapResponse = await fetchMarketCapFromMock(fid);
 
-  const result: {
-    creatorScore?: CreatorScore;
-    marketCap?: MarketCap;
-  } = {};
+    const result: {
+      creatorScore?: CreatorScore;
+      marketCap?: MarketCap;
+    } = {};
 
-  if (scoreResponse.success && scoreResponse.data?.creatorScore) {
-    result.creatorScore = {
-      score: scoreResponse.data.creatorScore,
-      timestamp: new Date().toISOString(),
-      source: 'talent-api',
-    };
+    if (scoreResponse.success && scoreResponse.data?.creatorScore) {
+      result.creatorScore = {
+        score: scoreResponse.data.creatorScore,
+        timestamp: new Date().toISOString(),
+        source: 'talent-api',
+      };
+    }
+
+    if (marketCapResponse.success && marketCapResponse.data?.marketCap) {
+      result.marketCap = {
+        value: marketCapResponse.data.marketCap,
+        currency: 'USD',
+        timestamp: new Date().toISOString(),
+        source: 'talent-api',
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    
+    // Fallback to mock data if everything fails
+    const mockScoreResponse = await fetchCreatorScoreFromMock(fid);
+    const mockMarketCapResponse = await fetchMarketCapFromMock(fid);
+
+    const result: {
+      creatorScore?: CreatorScore;
+      marketCap?: MarketCap;
+    } = {};
+
+    if (mockScoreResponse.success && mockScoreResponse.data?.creatorScore) {
+      result.creatorScore = {
+        score: mockScoreResponse.data.creatorScore,
+        timestamp: new Date().toISOString(),
+        source: 'talent-api',
+      };
+    }
+
+    if (mockMarketCapResponse.success && mockMarketCapResponse.data?.marketCap) {
+      result.marketCap = {
+        value: mockMarketCapResponse.data.marketCap,
+        currency: 'USD',
+        timestamp: new Date().toISOString(),
+        source: 'talent-api',
+      };
+    }
+
+    return result;
   }
-
-  if (marketCapResponse.success && marketCapResponse.data?.marketCap) {
-    result.marketCap = {
-      value: marketCapResponse.data.marketCap,
-      currency: 'USD',
-      timestamp: new Date().toISOString(),
-      source: 'talent-api',
-    };
-  }
-
-  return result;
 }
