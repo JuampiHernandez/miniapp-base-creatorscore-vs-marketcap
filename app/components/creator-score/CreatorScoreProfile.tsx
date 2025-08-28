@@ -26,8 +26,12 @@ export function CreatorScoreProfile() {
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('Loading user data for FID:', context.user.fid);
+        console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
 
         const userData = await fetchUserData(context.user.fid);
+        console.log('User data loaded:', userData);
         
         const profile: UserProfile = {
           fid: context.user.fid,
@@ -46,6 +50,7 @@ export function CreatorScoreProfile() {
           setRatioAnalysis(analysis);
         }
       } catch (err) {
+        console.error('Error in loadUserData:', err);
         setError(err instanceof Error ? err.message : 'Failed to load user data');
       } finally {
         setLoading(false);
