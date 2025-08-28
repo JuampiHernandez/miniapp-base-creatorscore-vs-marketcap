@@ -1,5 +1,5 @@
 import { TalentApiResponse, CreatorScore, MarketCap } from '../types/creator-score';
-import { fetchCreatorScore, fetchBuilderScore } from './talent-api';
+import { fetchCreatorScore } from './talent-api';
 
 // Mock data for development (fallback when Talent API is not available)
 const MOCK_CREATOR_SCORES: Record<number, number> = {

@@ -1,9 +1,17 @@
-import { TalentApiResponse, CreatorScore } from '../types/creator-score';
+import { TalentApiResponse } from '../types/creator-score';
 
 const TALENT_API_BASE_URL = 'https://api.talentprotocol.com/score';
 
 interface TalentApiConfig {
   apiKey: string;
+}
+
+interface TalentApiScoreResponse {
+  score: {
+    slug: string;
+    points: number;
+    last_calculated_at: string | null;
+  };
 }
 
 class TalentApiService {
@@ -32,7 +40,7 @@ class TalentApiService {
   async fetchCreatorScore(fid: number): Promise<TalentApiResponse> {
     try {
       const url = `${TALENT_API_BASE_URL}?id=${fid}&account_source=farcaster&scorer_slug=creator_score`;
-      const data = await this.makeRequest<any>(url);
+      const data = await this.makeRequest<TalentApiScoreResponse>(url);
 
       if (data.score && typeof data.score.points === 'number') {
         return {
@@ -59,7 +67,7 @@ class TalentApiService {
   async fetchBuilderScore(fid: number): Promise<TalentApiResponse> {
     try {
       const url = `${TALENT_API_BASE_URL}?id=${fid}&account_source=farcaster&scorer_slug=builder_score`;
-      const data = await this.makeRequest<any>(url);
+      const data = await this.makeRequest<TalentApiScoreResponse>(url);
 
       if (data.score && typeof data.score.points === 'number') {
         return {
