@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { UserProfile, RatioAnalysis } from '../../types/creator-score';
 import { analyzeRatio, formatCurrency, formatRatio } from '../../lib/ratio-calculator';
@@ -52,7 +53,7 @@ export function CreatorScoreProfile() {
     }
 
     loadUserData();
-  }, [context?.user?.fid]);
+  }, [context?.user?.fid, context?.user?.username, context?.user?.displayName, context?.user?.pfpUrl]);
 
   if (loading) {
     return (
@@ -89,14 +90,19 @@ export function CreatorScoreProfile() {
     <div className="space-y-6">
       {/* User Header */}
       <div className="flex items-center space-x-4">
-        <img 
-          src={userProfile.pfpUrl || '/default-avatar.png'} 
-          alt="Profile"
-          className="w-16 h-16 rounded-full border-2 border-gray-200"
-          onError={(e) => {
-            e.currentTarget.src = '/default-avatar.png';
-          }}
-        />
+        <div className="relative w-16 h-16">
+          <Image 
+            src={userProfile.pfpUrl || '/default-avatar.png'} 
+            alt="Profile"
+            fill
+            className="rounded-full border-2 border-gray-200 object-cover"
+            onError={(e) => {
+              // Fallback to default avatar
+              const target = e.target as HTMLImageElement;
+              target.src = '/default-avatar.png';
+            }}
+          />
+        </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900">
             {userProfile.displayName}

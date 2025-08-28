@@ -72,7 +72,7 @@ export function simulateCreatorScore(
   };
 }
 
-export function formatCurrency(value: number, currency: string = 'USD'): string {
+export function formatCurrency(value: number): string {
   if (value >= 1e9) {
     return `$${(value / 1e9).toFixed(2)}B`;
   } else if (value >= 1e6) {
