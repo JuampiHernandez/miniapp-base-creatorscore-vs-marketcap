@@ -1,5 +1,5 @@
 import { TalentApiResponse, CreatorScore, MarketCap } from '../types/creator-score';
-import { fetchCreatorScore } from './talent-api';
+import { fetchCreatorScore, fetchMarketCap } from './talent-api';
 
 // Mock data for development (fallback when Talent API is not available)
 const MOCK_CREATOR_SCORES: Record<number, number> = {
@@ -61,8 +61,8 @@ export async function fetchUserData(fid: number): Promise<{
     // Try to get creator score from Talent API first
     const scoreResponse = await fetchCreatorScore(fid);
     
-    // For now, we'll use mock market cap data since we don't have a real API for that
-    const marketCapResponse = await fetchMarketCapFromMock(fid);
+    // Try to get market cap from Talent API credentials endpoint
+    const marketCapResponse = await fetchMarketCap(fid);
 
     const result: {
       creatorScore?: CreatorScore;
@@ -80,9 +80,11 @@ export async function fetchUserData(fid: number): Promise<{
     if (marketCapResponse.success && marketCapResponse.data?.marketCap) {
       result.marketCap = {
         value: marketCapResponse.data.marketCap,
-        currency: 'USD',
+        currency: marketCapResponse.data.unitOfMeasure,
         timestamp: new Date().toISOString(),
         source: 'talent-api',
+        readableValue: marketCapResponse.data.readableValue,
+        unitOfMeasure: marketCapResponse.data.unitOfMeasure,
       };
     }
 
@@ -113,6 +115,8 @@ export async function fetchUserData(fid: number): Promise<{
         currency: 'USD',
         timestamp: new Date().toISOString(),
         source: 'talent-api',
+        readableValue: 'Mock Data',
+        unitOfMeasure: 'USD',
       };
     }
 
