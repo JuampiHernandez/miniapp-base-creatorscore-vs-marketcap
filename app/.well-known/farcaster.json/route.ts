@@ -16,9 +16,9 @@ export async function GET() {
 
   return Response.json({
     accountAssociation: {
-      header: process.env.FARCASTER_HEADER,
-      payload: process.env.FARCASTER_PAYLOAD,
-      signature: process.env.FARCASTER_SIGNATURE,
+      header: "eyJmaWQiOjY3MzAsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhCRTE1NjIyNzQ1NkVGY0I1NkZEMDEwMzdGMjNiNWNBNGIxM0QzNkMxIn0",
+      payload: "eyJkb21haW4iOiJtaW5pYXBwLWJhc2UtY3JlYXRvcnNjb3JlLXZzLW1hcmtldC52ZXJjZWwuYXBwIn0",
+      signature: "MHgzMDM0ODIwMGQ1NWRjYjQ0NDljZDY0ZjJlOGFiMWYxNDlmNzk0ZTQ3ZmNlZWJhYTJkNTZhZDdkZTdmMGM2OGQ3MGJjOGI0ZDgzZTM1NGU5NGVmY2Q4NjVjYjgwNmY4ZjQ3ZDNmMDhkZWJiMjhkYjNiMTg0NTVlNjgyMDU0Yzk3YTFj"
     },
     baseBuilder: {
       allowedAddresses: ["0x..."] // You'll need to add your Base Builder address
