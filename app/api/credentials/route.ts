@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     
     for (const slug of slugsToTry) {
       try {
-        const url = `https://api.talentprotocol.com/credentials?id=${identifier}&account_source=${accountSource}&slug=${slug}`;
+        const url = `https://api.talentprotocol.com/credentials?id=${identifier}&account_source=${accountSource}&slug=${slug}&scorer_slug=creator_score`;
         console.log(`Trying: ${accountSource}/${slug} with identifier: ${identifier}`);
         console.log(`Full API URL: ${url}`);
         
