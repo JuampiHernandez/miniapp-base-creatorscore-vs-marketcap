@@ -30,7 +30,7 @@ export async function fetchCreatorScoreViaApi(identifier: number | string): Prom
 }
 
 // Function that uses our server-side API route for credentials
-export async function fetchCredentialsViaApi(identifier: number | string, slug: string): Promise<CredentialsResponse> {
+export async function fetchCredentialsViaApi(identifier: number | string): Promise<CredentialsResponse> {
   try {
     const response = await fetch(`/api/credentials?${typeof identifier === 'string' ? 'wallet' : 'fid'}=${identifier}`);
     if (!response.ok) {
@@ -126,7 +126,7 @@ export async function fetchMarketCap(identifier: number | string): Promise<{ suc
     console.log('Attempting to fetch market cap for identifier:', identifier);
     
     // Use the server-side API route for credentials
-    const result = await fetchCredentialsViaApi(identifier, 'zora');
+    const result = await fetchCredentialsViaApi(identifier);
     
     if (result.success && result.data?.credentials) {
       const marketCapData = extractMarketCapFromCredentials(result.data.credentials);

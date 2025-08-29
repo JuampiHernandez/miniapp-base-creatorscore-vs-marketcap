@@ -1,5 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Define proper types for credential data
+interface CredentialDataPoint {
+  id: number;
+  name: string;
+  value: string;
+  is_maximum?: boolean;
+  multiplier: number;
+  readable_value: string;
+  multiplication_result?: string;
+}
+
+interface Credential {
+  account_source: string;
+  calculating_score: boolean;
+  category: string;
+  data_issuer_name: string;
+  data_issuer_slug: string;
+  description: string;
+  external_url: string;
+  immutable: boolean;
+  last_calculated_at: string | null;
+  max_score: number;
+  name: string;
+  points: number;
+  points_calculation_logic: {
+    points: number;
+    max_points: number;
+    data_points: CredentialDataPoint[];
+    points_description: string;
+    points_number_calculated: number;
+  };
+  readable_value: string;
+  slug: string;
+  uom: string;
+  updated_at: string | null;
+}
+
+interface ExtendedCredential extends Credential {
+  source_slug: string;
+  account_source: string;
+}
+
+interface CredentialsResponse {
+  credentials: Credential[];
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     // Try multiple slugs to find Creator Coin Market Cap
     const slugsToTry = ['zora', 'talent', 'ethereum', 'coinbase', 'opensea', 'base'];
-    const allCredentials: any[] = [];
+    const allCredentials: ExtendedCredential[] = [];
     
     for (const slug of slugsToTry) {
       try {
@@ -38,12 +84,12 @@ export async function GET(request: NextRequest) {
         });
 
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.json() as CredentialsResponse;
           console.log(`Response for ${accountSource}/${slug}:`, data);
           
           // Collect all credentials for debugging
           if (data.credentials && data.credentials.length > 0) {
-            allCredentials.push(...data.credentials.map((cred: any) => ({
+            allCredentials.push(...data.credentials.map((cred: Credential): ExtendedCredential => ({
               ...cred,
               source_slug: slug,
               account_source: accountSource
@@ -51,7 +97,7 @@ export async function GET(request: NextRequest) {
           }
           
           // Check if this response contains Creator Coin Market Cap
-          if (data.credentials && data.credentials.some((cred: any) => 
+          if (data.credentials && data.credentials.some((cred: Credential) => 
             cred.name === 'Creator Coin Market Cap'
           )) {
             console.log(`Found Creator Coin Market Cap in ${accountSource}/${slug}`);
@@ -74,7 +120,7 @@ export async function GET(request: NextRequest) {
           credentials: allCredentials,
           debug: {
             message: 'No Creator Coin Market Cap found, but other credentials available',
-            available_credentials: allCredentials.map((cred: any) => ({
+            available_credentials: allCredentials.map((cred: ExtendedCredential) => ({
               name: cred.name,
               source: cred.source_slug,
               account_source: cred.account_source,

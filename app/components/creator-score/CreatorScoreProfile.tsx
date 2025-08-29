@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { UserProfile, RatioAnalysis } from '../../types/creator-score';
@@ -16,67 +16,71 @@ export function CreatorScoreProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadUserData() {
-      if (!context?.user?.fid) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        console.log('Loading user data for FID:', context.user.fid);
-        console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
-
-        // Get user data using FID or wallet address
-        console.log('Farcaster context user:', context.user);
-        console.log('Available user properties:', Object.keys(context.user));
-        
-        // Try to get wallet address from context, fallback to FID
-        const identifier = (context.user as any).verifications?.[0] || 
-                          (context.user as any).primaryWallet || 
-                          context.user.fid;
-        
-        console.log('Using identifier for API calls:', identifier);
-        
-        const userData = await fetchUserData(identifier);
-        console.log('User data loaded:', userData);
-        
-        const profile: UserProfile = {
-          fid: context.user.fid,
-          username: context.user.username || 'unknown',
-          displayName: context.user.displayName || 'Unknown User',
-          pfpUrl: context.user.pfpUrl || '',
-          ...userData,
-        };
-
-        console.log('Profile created:', profile);
-        setUserProfile(profile);
-
-        // Calculate ratio if we have both values
-        if (userData.creatorScore && userData.marketCap) {
-          console.log('Both values available, calculating ratio...');
-          const ratio = userData.marketCap.value / userData.creatorScore.score;
-          const analysis = analyzeRatio(ratio);
-          setRatioAnalysis(analysis);
-        } else {
-          console.log('Missing data:', { 
-            creatorScore: !!userData.creatorScore, 
-            marketCap: !!userData.marketCap 
-          });
-        }
-      } catch (err) {
-        console.error('Error in loadUserData:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load user data');
-      } finally {
-        setLoading(false);
-      }
+  const loadUserData = useCallback(async () => {
+    if (!context?.user?.fid) {
+      setLoading(false);
+      return;
     }
 
-    loadUserData();
-  }, [context?.user?.fid, context?.user?.username, context?.user?.displayName, context?.user?.pfpUrl]);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Loading user data for FID:', context.user.fid);
+      console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
+
+      // Get user data using FID or wallet address
+      console.log('Farcaster context user:', context.user);
+      console.log('Available user properties:', Object.keys(context.user));
+      
+      // Try to get wallet address from context, fallback to FID
+      const userContext = context.user as Record<string, unknown>;
+      const verifications = userContext.verifications as string[] | undefined;
+      const primaryWallet = userContext.primaryWallet as string | undefined;
+      
+      const identifier = verifications?.[0] || primaryWallet || context.user.fid;
+      
+      console.log('Using identifier for API calls:', identifier);
+      
+      const userData = await fetchUserData(identifier);
+      console.log('User data loaded:', userData);
+      
+      const profile: UserProfile = {
+        fid: context.user.fid,
+        username: context.user.username || 'unknown',
+        displayName: context.user.displayName || 'Unknown User',
+        pfpUrl: context.user.pfpUrl || '',
+        ...userData,
+      };
+
+      console.log('Profile created:', profile);
+      setUserProfile(profile);
+
+      // Calculate ratio if we have both values
+      if (userData.creatorScore && userData.marketCap) {
+        console.log('Both values available, calculating ratio...');
+        const ratio = userData.marketCap.value / userData.creatorScore.score;
+        const analysis = analyzeRatio(ratio);
+        setRatioAnalysis(analysis);
+      } else {
+        console.log('Missing data:', { 
+          creatorScore: !!userData.creatorScore, 
+          marketCap: !!userData.marketCap 
+        });
+      }
+    } catch (err) {
+      console.error('Error in loadUserData:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
+  }, [context?.user]);
+
+  useEffect(() => {
+    if (context?.user) {
+      loadUserData();
+    }
+  }, [context?.user, loadUserData]);
 
   if (loading) {
     return (
