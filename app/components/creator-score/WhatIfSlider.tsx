@@ -57,8 +57,8 @@ export default function WhatIfSlider({
   }, [creatorScore, marketCap, currentRatio, onSimulation]);
 
   const getCategoryFromRatio = (ratio: number) => {
-    if (ratio < 0.5) return 'undervalued';
-    if (ratio > 2.0) return 'overvalued';
+    if (ratio < 0.002) return 'undervalued';
+    if (ratio > 0.005) return 'overvalued';
     return 'balanced';
   };
 

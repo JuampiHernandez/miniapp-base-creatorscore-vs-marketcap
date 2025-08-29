@@ -183,11 +183,11 @@ export function CreatorScoreProfile() {
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                   <div className="text-center">
                     <div className="font-semibold mb-1">How the Ratio Works:</div>
-                    <div>Ratio = Market Cap ÷ Creator Score</div>
+                    <div>Ratio = Creator Score ÷ Market Cap</div>
                     <div className="mt-2 text-xs">
-                      <div><strong>Undervalued</strong> (ratio &lt; 0.5): High score, low market cap = growth potential</div>
-                      <div><strong>Balanced</strong> (0.5 - 2.0): Fair valuation</div>
-                      <div><strong>Overvalued</strong> (ratio &gt; 2.0): Low score, high market cap = build more</div>
+                      <div><strong>Undervalued</strong> (ratio &lt; 2‰): High score, low market cap = growth potential</div>
+                      <div><strong>Balanced</strong> (2‰ - 5‰): Fair valuation</div>
+                      <div><strong>Overvalued</strong> (ratio &gt; 5‰): Low score, high market cap = build more</div>
                     </div>
                   </div>
                 </div>
