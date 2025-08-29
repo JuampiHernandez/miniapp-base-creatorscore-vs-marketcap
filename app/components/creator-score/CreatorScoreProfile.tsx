@@ -4,10 +4,10 @@ import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { UserProfile, RatioAnalysis } from '../../types/creator-score';
-import { analyzeRatio, formatCurrency, formatRatio } from '../../lib/ratio-calculator';
+import { analyzeRatio, formatCurrency } from '../../lib/ratio-calculator';
 import { fetchUserData } from '../../lib/mock-api';
-import { RatioMeter } from './RatioMeter';
-import { WhatIfSlider } from './WhatIfSlider';
+import RatioMeter from './RatioMeter';
+import WhatIfSlider from './WhatIfSlider';
 
 export function CreatorScoreProfile() {
   const { context } = useMiniKit();
@@ -15,6 +15,15 @@ export function CreatorScoreProfile() {
   const [ratioAnalysis, setRatioAnalysis] = useState<RatioAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [simulationResult, setSimulationResult] = useState<{
+    originalRatio: number;
+    simulatedRatio: number;
+    originalCategory: string;
+    simulatedCategory: string;
+    change: 'improved' | 'worsened' | 'unchanged';
+    simulatedCreatorScore: number;
+    simulatedMarketCap: number;
+  } | null>(null);
 
   const loadUserData = useCallback(async () => {
     if (!context?.user?.fid) {
@@ -167,7 +176,28 @@ export function CreatorScoreProfile() {
       {ratioAnalysis && (
         <div className="space-y-4">
           <div className="text-center">
-            <div className="text-3xl mb-2">{ratioAnalysis.categoryEmoji}</div>
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <div className="text-3xl">{ratioAnalysis.categoryEmoji}</div>
+              <div className="relative group">
+                <span className="text-blue-500 cursor-help text-lg">ⓘ</span>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  <div className="text-center">
+                    <div className="font-medium mb-1">How Ratio Works</div>
+                    <div className="text-xs">
+                      <div>📈 <strong>Undervalued</strong> (ratio &lt; 0.001):</div>
+                      <div className="ml-2">High creator score, low market cap</div>
+                      <div className="ml-2">Potential for growth!</div>
+                      <div className="mt-1">⚖️ <strong>Balanced</strong> (0.001-0.01):</div>
+                      <div className="ml-2">Fair valuation</div>
+                      <div className="mt-1">📉 <strong>Overvalued</strong> (ratio &gt; 0.01):</div>
+                      <div className="ml-2">Low creator score, high market cap</div>
+                      <div className="ml-2">Consider building more!</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                </div>
+              </div>
+            </div>
             <h3 className="text-lg font-semibold text-gray-900">
               {ratioAnalysis.categoryLabel}
             </h3>
@@ -176,23 +206,20 @@ export function CreatorScoreProfile() {
             </p>
           </div>
 
-          <RatioMeter ratio={ratioAnalysis.ratio} category={ratioAnalysis.category} />
-          
-          <div className="text-center">
-            <div className="text-sm text-gray-500">Ratio</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {formatRatio(ratioAnalysis.ratio)}
-            </div>
-          </div>
-        </div>
-      )}
+          {/* Ratio Meter */}
+          <RatioMeter 
+            ratioAnalysis={ratioAnalysis}
+            simulationResult={simulationResult}
+          />
 
-      {/* What If Slider */}
-      {userProfile.creatorScore && userProfile.marketCap && (
-        <WhatIfSlider 
-          currentCreatorScore={userProfile.creatorScore.score}
-          currentMarketCap={userProfile.marketCap.value}
-        />
+          {/* What If Slider */}
+          <WhatIfSlider 
+            currentRatio={ratioAnalysis.ratio}
+            onSimulation={setSimulationResult}
+            currentCreatorScore={userProfile?.creatorScore?.score || 0}
+            currentMarketCap={userProfile?.marketCap?.value || 0}
+          />
+        </div>
       )}
 
       {/* Debug Information */}
