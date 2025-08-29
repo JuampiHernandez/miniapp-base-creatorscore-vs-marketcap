@@ -1,20 +1,23 @@
-import { TalentApiResponse, CreatorScore, MarketCap } from '../types/creator-score';
-import { fetchCreatorScore, fetchMarketCap } from './talent-api';
+import { CreatorScore, MarketCap } from '../types/creator-score';
+import { fetchCreatorScore } from './talent-api';
+import { getCreatorCoinMarketCap } from './zora-api';
 
-// Mock data for development (fallback when Talent API is not available)
+// Mock data for fallback
 const MOCK_CREATOR_SCORES: Record<number, number> = {
-  20390: 850, // Example FID with creator score
-  12345: 1200,
-  67890: 650,
+  1: 850,
+  2: 1200,
+  3: 650,
+  6730: 155, // Your actual score
 };
 
 const MOCK_MARKET_CAPS: Record<number, number> = {
-  20390: 2500000, // $2.5M market cap
-  12345: 8000000, // $8M market cap
-  67890: 1500000, // $1.5M market cap
+  1: 2500000,
+  2: 1800000,
+  3: 3200000,
+  6730: 500000, // Mock market cap for testing
 };
 
-export async function fetchCreatorScoreFromMock(fid: number): Promise<TalentApiResponse> {
+export async function fetchCreatorScoreFromMock(fid: number): Promise<{ success: boolean; data?: { creatorScore: number }; error?: string }> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300));
   
@@ -33,7 +36,7 @@ export async function fetchCreatorScoreFromMock(fid: number): Promise<TalentApiR
   };
 }
 
-export async function fetchMarketCapFromMock(fid: number): Promise<TalentApiResponse> {
+export async function fetchMarketCapFromMock(fid: number): Promise<{ success: boolean; data?: { marketCap: number; readableValue: string; unitOfMeasure: string }; error?: string }> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 300));
   
@@ -42,7 +45,11 @@ export async function fetchMarketCapFromMock(fid: number): Promise<TalentApiResp
   if (marketCap !== undefined) {
     return {
       success: true,
-      data: { marketCap },
+      data: { 
+        marketCap,
+        readableValue: marketCap >= 1000000 ? `${(marketCap / 1000000).toFixed(1)}M` : `${(marketCap / 1000).toFixed(1)}K`,
+        unitOfMeasure: 'USD'
+      },
     };
   }
   
@@ -52,7 +59,7 @@ export async function fetchMarketCapFromMock(fid: number): Promise<TalentApiResp
   };
 }
 
-// Main function that tries real API first, falls back to mock
+// Main function that tries real APIs first, falls back to mock
 export async function fetchUserData(identifier: number | string): Promise<{
   creatorScore?: CreatorScore;
   marketCap?: MarketCap;
@@ -63,8 +70,19 @@ export async function fetchUserData(identifier: number | string): Promise<{
     // Try to get creator score from Talent API first
     const scoreResponse = await fetchCreatorScore(identifier);
     
-    // Try to get market cap from Talent API credentials endpoint
-    const marketCapResponse = await fetchMarketCap(identifier);
+    // Try to get market cap from Zora API
+    let marketCapData = null;
+    if (typeof identifier === 'string' && identifier.startsWith('0x')) {
+      // If identifier is a wallet address, try Zora API
+      marketCapData = await getCreatorCoinMarketCap(identifier);
+    }
+    
+    // If no wallet address or Zora API failed, try to get wallet from Farcaster context
+    if (!marketCapData && typeof identifier === 'number') {
+      console.log('Identifier is FID, trying to get wallet address from context...');
+      // For now, we'll use mock data if we can't get wallet address
+      // In the future, we could implement wallet address lookup from FID
+    }
 
     const result: {
       creatorScore?: CreatorScore;
@@ -80,14 +98,14 @@ export async function fetchUserData(identifier: number | string): Promise<{
       };
     }
 
-    if (marketCapResponse.success && marketCapResponse.data?.marketCap) {
+    if (marketCapData) {
       result.marketCap = {
-        value: marketCapResponse.data.marketCap,
-        currency: marketCapResponse.data.unitOfMeasure,
+        value: marketCapData.marketCap,
+        currency: 'USD',
         timestamp: new Date().toISOString(),
-        source: 'talent-api',
-        readableValue: marketCapResponse.data.readableValue,
-        unitOfMeasure: marketCapResponse.data.unitOfMeasure,
+        source: 'zora-api',
+        readableValue: marketCapData.readableValue,
+        unitOfMeasure: marketCapData.unitOfMeasure,
       };
     }
 
@@ -119,8 +137,8 @@ export async function fetchUserData(identifier: number | string): Promise<{
         currency: 'USD',
         timestamp: new Date().toISOString(),
         source: 'talent-api',
-        readableValue: 'Mock Data',
-        unitOfMeasure: 'USD',
+        readableValue: mockMarketCapResponse.data.readableValue,
+        unitOfMeasure: mockMarketCapResponse.data.unitOfMeasure,
       };
     }
 

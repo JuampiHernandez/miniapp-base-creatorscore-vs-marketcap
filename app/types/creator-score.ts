@@ -9,7 +9,7 @@ export interface MarketCap {
   value: number;
   currency: string;
   timestamp: string;
-  source: 'talent-api';
+  source: 'talent-api' | 'zora-api';
   readableValue: string;
   unitOfMeasure: string;
 }
