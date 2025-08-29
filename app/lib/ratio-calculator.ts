@@ -58,9 +58,10 @@ export function simulateCreatorScore(
   
   let change: 'improved' | 'worsened' | 'unchanged';
   
-  if (simulatedRatio < originalRatio) {
+  // Higher ratio = more undervalued = better
+  if (simulatedRatio > originalRatio) {
     change = 'improved';
-  } else if (simulatedRatio > originalRatio) {
+  } else if (simulatedRatio < originalRatio) {
     change = 'worsened';
   } else {
     change = 'unchanged';
