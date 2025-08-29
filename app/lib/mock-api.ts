@@ -1,147 +1,97 @@
 import { CreatorScore, MarketCap } from '../types/creator-score';
-import { fetchCreatorScore } from './talent-api';
-import { getCreatorCoinMarketCap } from './zora-api';
+import { fetchCreatorScoreViaApi } from './talent-api';
+import { getHighestCreatorCoinMarketCap } from './zora-api';
+import { NeynarApiService } from './neynar-api';
 
-// Mock data for fallback
-const MOCK_CREATOR_SCORES: Record<number, number> = {
-  1: 850,
-  2: 1200,
-  3: 650,
-  6730: 155, // Your actual score
+// Mock data for development/testing
+const MOCK_CREATOR_SCORES: Record<number, CreatorScore> = {
+  6730: {
+    score: 155,
+    slug: 'creator_score',
+    lastCalculatedAt: '2025-08-26T16:37:34Z',
+    source: 'talent-api'
+  }
 };
 
-const MOCK_MARKET_CAPS: Record<number, number> = {
-  1: 2500000,
-  2: 1800000,
-  3: 3200000,
-  6730: 500000, // Mock market cap for testing
+const MOCK_MARKET_CAPS: Record<number, MarketCap> = {
+  6730: {
+    value: 104000,
+    currency: 'USDC',
+    timestamp: '2025-08-26T16:37:33Z',
+    source: 'zora-api',
+    readableValue: '104K',
+    unitOfMeasure: 'USDC'
+  }
 };
 
-export async function fetchCreatorScoreFromMock(fid: number): Promise<{ success: boolean; data?: { creatorScore: number }; error?: string }> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const score = MOCK_CREATOR_SCORES[fid];
-  
-  if (score !== undefined) {
-    return {
-      success: true,
-      data: { creatorScore: score },
-    };
-  }
-  
-  return {
-    success: false,
-    error: 'Creator score not found',
-  };
+// Mock function for creator score (fallback)
+export async function fetchCreatorScoreFromMock(fid: number): Promise<CreatorScore | null> {
+  console.log(`🎭 Using mock creator score for FID: ${fid}`);
+  return MOCK_CREATOR_SCORES[fid] || null;
 }
 
-export async function fetchMarketCapFromMock(fid: number): Promise<{ success: boolean; data?: { marketCap: number; readableValue: string; unitOfMeasure: string }; error?: string }> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const marketCap = MOCK_MARKET_CAPS[fid];
-  
-  if (marketCap !== undefined) {
-    return {
-      success: true,
-      data: { 
-        marketCap,
-        readableValue: marketCap >= 1000000 ? `${(marketCap / 1000000).toFixed(1)}M` : `${(marketCap / 1000).toFixed(1)}K`,
-        unitOfMeasure: 'USD'
-      },
-    };
-  }
-  
-  return {
-    success: false,
-    error: 'Market cap not found',
-  };
+// Mock function for market cap (fallback)
+export async function fetchMarketCapFromMock(fid: number): Promise<MarketCap | null> {
+  console.log(`🎭 Using mock market cap for FID: ${fid}`);
+  return MOCK_MARKET_CAPS[fid] || null;
 }
 
-// Main function that tries real APIs first, falls back to mock
-export async function fetchUserData(identifier: number | string): Promise<{
-  creatorScore?: CreatorScore;
-  marketCap?: MarketCap;
-}> {
+/**
+ * Fetch user data using the new Neynar + Zora approach
+ */
+export async function fetchUserData(fid: number): Promise<{ creatorScore: CreatorScore | null; marketCap: MarketCap | null }> {
+  console.log(`🚀 Fetching user data for FID: ${fid}`);
+  
   try {
-    console.log('Fetching user data for identifier:', identifier);
-    
-    // Try to get creator score from Talent API first
-    const scoreResponse = await fetchCreatorScore(identifier);
-    
-    // Try to get market cap from Zora API
-    let marketCapData = null;
-    if (typeof identifier === 'string' && identifier.startsWith('0x')) {
-      // If identifier is a wallet address, try Zora API
-      marketCapData = await getCreatorCoinMarketCap(identifier);
-    }
-    
-    // If no wallet address or Zora API failed, try to get wallet from Farcaster context
-    if (!marketCapData && typeof identifier === 'number') {
-      console.log('Identifier is FID, trying to get wallet address from context...');
-      // For now, we'll use mock data if we can't get wallet address
-      // In the future, we could implement wallet address lookup from FID
-    }
+    // 1. Get Creator Score from Talent Protocol
+    console.log('📊 Fetching creator score from Talent Protocol...');
+    const creatorScore = await fetchCreatorScoreViaApi(fid);
+    console.log('✅ Creator score result:', creatorScore);
 
-    const result: {
-      creatorScore?: CreatorScore;
-      marketCap?: MarketCap;
-    } = {};
+    // 2. Get wallet addresses from Neynar API
+    console.log('🔍 Fetching wallet addresses from Neynar API...');
+    const walletAddresses = await NeynarApiService.getUserByFid(fid);
+    console.log('✅ Wallet addresses found:', walletAddresses);
 
-    if (scoreResponse.success && scoreResponse.data?.creatorScore) {
-      result.creatorScore = {
-        score: scoreResponse.data.creatorScore,
-        slug: 'creator_score',
-        lastCalculatedAt: new Date().toISOString(),
-        source: 'talent-api',
-      };
+    // 3. Get market cap from Zora API using wallet addresses
+    let marketCap: MarketCap | null = null;
+    if (walletAddresses && walletAddresses.length > 0) {
+      console.log('💰 Fetching market cap from Zora API...');
+      marketCap = await getHighestCreatorCoinMarketCap(walletAddresses);
+      console.log('✅ Market cap result:', marketCap);
+    } else {
+      console.log('⚠️ No wallet addresses found, skipping Zora API call');
     }
 
-    if (marketCapData) {
-      result.marketCap = {
-        value: marketCapData.marketCap,
-        currency: 'USD',
-        timestamp: new Date().toISOString(),
-        source: 'zora-api',
-        readableValue: marketCapData.readableValue,
-        unitOfMeasure: marketCapData.unitOfMeasure,
-      };
+    // 4. Fallback to mock data if APIs fail
+    if (!creatorScore) {
+      console.log('🔄 Falling back to mock creator score');
+      const mockCreatorScore = await fetchCreatorScoreFromMock(fid);
+      if (mockCreatorScore) {
+        console.log('✅ Mock creator score loaded');
+      }
     }
 
-    return result;
+    if (!marketCap) {
+      console.log('🔄 Falling back to mock market cap');
+      const mockMarketCap = await fetchMarketCapFromMock(fid);
+      if (mockMarketCap) {
+        console.log('✅ Mock market cap loaded');
+      }
+    }
+
+    return {
+      creatorScore: creatorScore || await fetchCreatorScoreFromMock(fid),
+      marketCap: marketCap || await fetchMarketCapFromMock(fid)
+    };
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    console.error('❌ Error in fetchUserData:', error);
     
-    // Fallback to mock data if everything fails
-    const mockScoreResponse = await fetchCreatorScoreFromMock(1);
-    const mockMarketCapResponse = await fetchMarketCapFromMock(1);
-
-    const result: {
-      creatorScore?: CreatorScore;
-      marketCap?: MarketCap;
-    } = {};
-
-    if (mockScoreResponse.success && mockScoreResponse.data?.creatorScore) {
-      result.creatorScore = {
-        score: mockScoreResponse.data.creatorScore,
-        slug: 'creator_score',
-        lastCalculatedAt: new Date().toISOString(),
-        source: 'talent-api',
-      };
-    }
-
-    if (mockMarketCapResponse.success && mockMarketCapResponse.data?.marketCap) {
-      result.marketCap = {
-        value: mockMarketCapResponse.data.marketCap,
-        currency: 'USD',
-        timestamp: new Date().toISOString(),
-        source: 'talent-api',
-        readableValue: mockMarketCapResponse.data.readableValue,
-        unitOfMeasure: mockMarketCapResponse.data.unitOfMeasure,
-      };
-    }
-
-    return result;
+    // Fallback to mock data on error
+    console.log('🔄 Falling back to mock data due to error');
+    return {
+      creatorScore: await fetchCreatorScoreFromMock(fid),
+      marketCap: await fetchMarketCapFromMock(fid)
+    };
   }
 }

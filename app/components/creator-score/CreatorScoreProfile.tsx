@@ -29,7 +29,7 @@ export function CreatorScoreProfile() {
       console.log('Loading user data for FID:', context.user.fid);
       console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
 
-      // Get user data using FID or wallet address
+      // Get user data using FID - we'll get wallet addresses from Neynar API
       console.log('=== FARCaster Context Debug ===');
       console.log('Full context:', context);
       console.log('User object:', context.user);
@@ -42,65 +42,23 @@ export function CreatorScoreProfile() {
       // Debug: Log the entire user object structure
       console.log('User object JSON:', JSON.stringify(context.user, null, 2));
       
-      // Try different ways to access wallet information
-      const userContext = context.user as Record<string, unknown>;
-      console.log('User context keys:', Object.keys(userContext));
+      // Use FID directly - we'll get wallet addresses from Neynar API
+      const fid = context.user.fid;
+      console.log('🎯 Using FID for data fetching:', fid);
       
-      // Check for wallet properties in different formats
-      const verifications = userContext.verifications as string[] | undefined;
-      const primaryWallet = userContext.primaryWallet as string | undefined;
-      const wallet = userContext.wallet as string | undefined;
-      const address = userContext.address as string | undefined;
-      const ethAddress = userContext.ethAddress as string | undefined;
-      
-      // Additional wallet detection attempts
-      const userWallet = (userContext as Record<string, unknown>).userWallet as string | undefined;
-      const linkedWallet = (userContext as Record<string, unknown>).linkedWallet as string | undefined;
-      const walletAddress = (userContext as Record<string, unknown>).walletAddress as string | undefined;
-      
-      console.log('User verifications:', verifications);
-      console.log('User primaryWallet:', primaryWallet);
-      console.log('User wallet:', wallet);
-      console.log('User address:', address);
-      console.log('User ethAddress:', ethAddress);
-      console.log('User userWallet:', userWallet);
-      console.log('User linkedWallet:', linkedWallet);
-      console.log('User walletAddress:', walletAddress);
       console.log('================================');
       
-      // Try to get wallet address from context, fallback to FID
-      const identifier = verifications?.[0] || 
-                        primaryWallet || 
-                        wallet || 
-                        address || 
-                        ethAddress || 
-                        userWallet ||
-                        linkedWallet ||
-                        walletAddress ||
-                        context.user.fid;
-      
-      console.log('Wallet detection results:');
-      console.log('- verifications[0]:', verifications?.[0]);
-      console.log('- primaryWallet:', primaryWallet);
-      console.log('- wallet:', wallet);
-      console.log('- address:', address);
-      console.log('- ethAddress:', ethAddress);
-      console.log('- userWallet:', userWallet);
-      console.log('- linkedWallet:', linkedWallet);
-      console.log('- walletAddress:', walletAddress);
-      console.log('- Final identifier used:', identifier);
-      console.log('- Type of identifier:', typeof identifier);
-      console.log('- Is wallet address?', typeof identifier === 'string' && identifier.startsWith('0x'));
-      
-      const userData = await fetchUserData(identifier);
+      const userData = await fetchUserData(fid);
       console.log('User data loaded:', userData);
       
+      // Create user profile with proper type handling
       const profile: UserProfile = {
         fid: context.user.fid,
         username: context.user.username || 'unknown',
         displayName: context.user.displayName || 'Unknown User',
         pfpUrl: context.user.pfpUrl || '',
-        ...userData,
+        creatorScore: userData.creatorScore || undefined,
+        marketCap: userData.marketCap || undefined
       };
 
       console.log('Profile created:', profile);
