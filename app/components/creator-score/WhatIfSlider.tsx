@@ -67,7 +67,7 @@ export default function WhatIfSlider({
     return simulated > original ? 'improved' : 'worsened';
   };
 
-  const formatCreatorScore = (value: number) => Math.round(value);
+
   const formatMarketCap = (value: number) => {
     if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
@@ -84,24 +84,25 @@ export default function WhatIfSlider({
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <label className="text-sm font-medium text-gray-700">
-            Creator Score: <span className="text-blue-600 font-bold">{formatCreatorScore(creatorScore)}</span>
+            Creator Score: <span className="text-blue-600 font-bold">{creatorScore}</span>
           </label>
           <span className="text-xs text-gray-500">
-            Current: {formatCreatorScore(currentCreatorScore)}
+            Current: {currentCreatorScore}
           </span>
         </div>
         <input
           type="range"
           min="0"
-          max="1000"
+          max="500"
+          step="1"
           value={creatorScore}
           onChange={(e) => setCreatorScore(Number(e.target.value))}
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
         />
         <div className="flex justify-between text-xs text-gray-500">
           <span>0</span>
+          <span>250</span>
           <span>500</span>
-          <span>1000</span>
         </div>
       </div>
 

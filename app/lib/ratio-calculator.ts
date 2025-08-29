@@ -1,8 +1,9 @@
 import { RatioAnalysis, SimulationResult } from '../types/creator-score';
 
 export const RATIO_THRESHOLDS = {
-  UNDERVALUED: 1000,
-  BALANCED_MAX: 3000,
+  UNDERVALUED: 0.0005,  // 0.5‰ - High score, low market cap = undervalued
+  BALANCED: 0.002,       // 2‰ - Fair valuation
+  OVERVALUED: 0.005      // 5‰ - Low score, high market cap = overvalued
 } as const;
 
 export function calculateRatio(marketCap: number, creatorScore: number): number {
@@ -18,19 +19,19 @@ export function analyzeRatio(ratio: number): RatioAnalysis {
 
   if (ratio < RATIO_THRESHOLDS.UNDERVALUED) {
     category = 'undervalued';
-    categoryEmoji = '🚀';
+    categoryEmoji = '📈';
     categoryLabel = 'Undervalued';
     description = 'High potential, low market recognition. Your creator value exceeds market expectations!';
-  } else if (ratio >= RATIO_THRESHOLDS.UNDERVALUED && ratio <= RATIO_THRESHOLDS.BALANCED_MAX) {
+  } else if (ratio >= RATIO_THRESHOLDS.UNDERVALUED && ratio <= RATIO_THRESHOLDS.BALANCED) {
     category = 'balanced';
     categoryEmoji = '⚖️';
     categoryLabel = 'Balanced';
-    description = 'Fair market valuation. Your creator value aligns well with market perception.';
+    description = 'Fair valuation. Your creator score and market cap are well-aligned.';
   } else {
     category = 'overvalued';
-    categoryEmoji = '🧃';
+    categoryEmoji = '📉';
     categoryLabel = 'Overvalued';
-    description = 'Market hype exceeds creator value. Consider focusing on building authentic creator value.';
+    description = 'High market cap relative to creator score. Focus on building your creator value!';
   }
 
   return {
@@ -38,7 +39,7 @@ export function analyzeRatio(ratio: number): RatioAnalysis {
     category,
     categoryEmoji,
     categoryLabel,
-    description,
+    description
   };
 }
 
