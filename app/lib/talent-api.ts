@@ -59,30 +59,76 @@ export async function fetchCredentialsViaApi(identifier: number | string): Promi
 
 // Function to extract market cap from credentials
 export function extractMarketCapFromCredentials(credentials: Credential[]): { value: number; readableValue: string; unitOfMeasure: string } | null {
+  console.log('Searching through credentials for market cap data...');
+  
+  // First, try to find "Creator Coin Market Cap" credential
   const marketCapCredential = credentials.find(cred => cred.name === 'Creator Coin Market Cap');
   
-  if (!marketCapCredential) {
-    return null;
+  if (marketCapCredential) {
+    console.log('Found Creator Coin Market Cap credential:', marketCapCredential);
+    const dataPoint = marketCapCredential.points_calculation_logic.data_points[0];
+    if (dataPoint) {
+      const numericValue = parseFloat(dataPoint.value.split(' ')[0]);
+      if (!isNaN(numericValue)) {
+        return {
+          value: numericValue,
+          readableValue: marketCapCredential.readable_value,
+          unitOfMeasure: marketCapCredential.uom,
+        };
+      }
+    }
   }
   
-  // Get the raw value from data points
-  const dataPoint = marketCapCredential.points_calculation_logic.data_points[0];
-  if (!dataPoint) {
-    return null;
+  // If not found, search for any credential that might contain market cap data
+  console.log('Searching for alternative market cap sources...');
+  
+  // Look for Zora-related credentials that might have market cap info
+  const zoraCredentials = credentials.filter(cred => 
+    cred.data_issuer_slug === 'zora' || 
+    cred.name.toLowerCase().includes('market') ||
+    cred.name.toLowerCase().includes('cap') ||
+    cred.name.toLowerCase().includes('coin')
+  );
+  
+  console.log('Zora-related credentials found:', zoraCredentials.length);
+  zoraCredentials.forEach(cred => {
+    console.log(`- ${cred.name}: ${cred.readable_value} ${cred.uom}`);
+  });
+  
+  // Look for any credential with USDC or USD values that might be market cap
+  const usdcCredentials = credentials.filter(cred => 
+    cred.uom === 'USDC' || 
+    cred.uom === 'USD' ||
+    cred.readable_value.includes('K') ||
+    cred.readable_value.includes('M')
+  );
+  
+  console.log('USDC/USD credentials found:', usdcCredentials.length);
+  usdcCredentials.forEach(cred => {
+    console.log(`- ${cred.name}: ${cred.readable_value} ${cred.uom} (${cred.data_issuer_name})`);
+  });
+  
+  // If we found any potential market cap data, return the first one
+  if (usdcCredentials.length > 0) {
+    const firstUsdcCred = usdcCredentials[0];
+    console.log('Using first USDC credential as potential market cap:', firstUsdcCred);
+    
+    // Try to extract numeric value
+    if (firstUsdcCred.points_calculation_logic.data_points && firstUsdcCred.points_calculation_logic.data_points.length > 0) {
+      const dataPoint = firstUsdcCred.points_calculation_logic.data_points[0];
+      const numericValue = parseFloat(dataPoint.value.split(' ')[0]);
+      if (!isNaN(numericValue)) {
+        return {
+          value: numericValue,
+          readableValue: firstUsdcCred.readable_value,
+          unitOfMeasure: firstUsdcCred.uom,
+        };
+      }
+    }
   }
   
-  // Parse the numeric value (e.g., "321.89094426528992 USDC" -> 321.89)
-  const numericValue = parseFloat(dataPoint.value.split(' ')[0]);
-  
-  if (isNaN(numericValue)) {
-    return null;
-  }
-  
-  return {
-    value: numericValue,
-    readableValue: marketCapCredential.readable_value,
-    unitOfMeasure: marketCapCredential.uom,
-  };
+  console.log('No market cap data found in any credentials');
+  return null;
 }
 
 // Main function that uses the server-side API route for creator score
