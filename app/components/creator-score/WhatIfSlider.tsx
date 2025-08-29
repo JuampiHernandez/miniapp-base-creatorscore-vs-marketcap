@@ -118,7 +118,7 @@ export default function WhatIfSlider({
         <input
           type="range"
           min="0"
-          max="10000000"
+          max="1000000"
           step="1000"
           value={marketCap}
           onChange={(e) => setMarketCap(Number(e.target.value))}
@@ -126,8 +126,8 @@ export default function WhatIfSlider({
         />
         <div className="flex justify-between text-xs text-gray-500">
           <span>0</span>
-          <span>5M</span>
-          <span>10M</span>
+          <span>500K</span>
+          <span>1M</span>
         </div>
       </div>
 
