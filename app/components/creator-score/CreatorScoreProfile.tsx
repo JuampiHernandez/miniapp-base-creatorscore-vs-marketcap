@@ -39,23 +39,45 @@ export function CreatorScoreProfile() {
       console.log('User pfpUrl:', context.user.pfpUrl);
       console.log('All user properties:', Object.keys(context.user));
       
-      // Safely access potential wallet properties
+      // Debug: Log the entire user object structure
+      console.log('User object JSON:', JSON.stringify(context.user, null, 2));
+      
+      // Try different ways to access wallet information
       const userContext = context.user as Record<string, unknown>;
+      console.log('User context keys:', Object.keys(userContext));
+      
+      // Check for wallet properties in different formats
       const verifications = userContext.verifications as string[] | undefined;
       const primaryWallet = userContext.primaryWallet as string | undefined;
       const wallet = userContext.wallet as string | undefined;
       const address = userContext.address as string | undefined;
       const ethAddress = userContext.ethAddress as string | undefined;
       
+      // Additional wallet detection attempts
+      const userWallet = (userContext as Record<string, unknown>).userWallet as string | undefined;
+      const linkedWallet = (userContext as Record<string, unknown>).linkedWallet as string | undefined;
+      const walletAddress = (userContext as Record<string, unknown>).walletAddress as string | undefined;
+      
       console.log('User verifications:', verifications);
       console.log('User primaryWallet:', primaryWallet);
       console.log('User wallet:', wallet);
       console.log('User address:', address);
       console.log('User ethAddress:', ethAddress);
+      console.log('User userWallet:', userWallet);
+      console.log('User linkedWallet:', linkedWallet);
+      console.log('User walletAddress:', walletAddress);
       console.log('================================');
       
       // Try to get wallet address from context, fallback to FID
-      const identifier = verifications?.[0] || primaryWallet || wallet || address || ethAddress || context.user.fid;
+      const identifier = verifications?.[0] || 
+                        primaryWallet || 
+                        wallet || 
+                        address || 
+                        ethAddress || 
+                        userWallet ||
+                        linkedWallet ||
+                        walletAddress ||
+                        context.user.fid;
       
       console.log('Wallet detection results:');
       console.log('- verifications[0]:', verifications?.[0]);
@@ -63,8 +85,12 @@ export function CreatorScoreProfile() {
       console.log('- wallet:', wallet);
       console.log('- address:', address);
       console.log('- ethAddress:', ethAddress);
+      console.log('- userWallet:', userWallet);
+      console.log('- linkedWallet:', linkedWallet);
+      console.log('- walletAddress:', walletAddress);
       console.log('- Final identifier used:', identifier);
       console.log('- Type of identifier:', typeof identifier);
+      console.log('- Is wallet address?', typeof identifier === 'string' && identifier.startsWith('0x'));
       
       const userData = await fetchUserData(identifier);
       console.log('User data loaded:', userData);
@@ -209,6 +235,23 @@ export function CreatorScoreProfile() {
           currentCreatorScore={userProfile.creatorScore.score}
           currentMarketCap={userProfile.marketCap.value}
         />
+      )}
+
+      {/* Debug Information */}
+      {process.env.NODE_ENV === 'development' && context && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+          <h3 className="text-sm font-medium text-yellow-800 mb-2">🔍 Debug Info</h3>
+          <div className="text-xs text-yellow-700 space-y-1">
+            <div><strong>FID:</strong> {context.user.fid}</div>
+            <div><strong>Username:</strong> {context.user.username}</div>
+            <div><strong>Identifier Used:</strong> {userProfile?.fid || 'Loading...'}</div>
+            <div><strong>Creator Score:</strong> {userProfile?.creatorScore ? '✅ Loaded' : '❌ Not loaded'}</div>
+            <div><strong>Market Cap:</strong> {userProfile?.marketCap ? '✅ Loaded' : '❌ Not loaded'}</div>
+            {userProfile?.marketCap && (
+              <div><strong>Market Cap Value:</strong> {userProfile.marketCap.readableValue} {userProfile.marketCap.unitOfMeasure}</div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* No Data Message */}
