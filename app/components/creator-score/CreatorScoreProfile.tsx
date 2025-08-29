@@ -30,17 +30,39 @@ export function CreatorScoreProfile() {
       console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
 
       // Get user data using FID or wallet address
-      console.log('Farcaster context user:', context.user);
-      console.log('Available user properties:', Object.keys(context.user));
+      console.log('=== FARCaster Context Debug ===');
+      console.log('Full context:', context);
+      console.log('User object:', context.user);
+      console.log('User FID:', context.user.fid);
+      console.log('User username:', context.user.username);
+      console.log('User displayName:', context.user.displayName);
+      console.log('User pfpUrl:', context.user.pfpUrl);
+      console.log('All user properties:', Object.keys(context.user));
+      console.log('User verifications:', (context.user as any).verifications);
+      console.log('User primaryWallet:', (context.user as any).primaryWallet);
+      console.log('User wallet:', (context.user as any).wallet);
+      console.log('User address:', (context.user as any).address);
+      console.log('User ethAddress:', (context.user as any).ethAddress);
+      console.log('================================');
       
       // Try to get wallet address from context, fallback to FID
       const userContext = context.user as Record<string, unknown>;
       const verifications = userContext.verifications as string[] | undefined;
       const primaryWallet = userContext.primaryWallet as string | undefined;
+      const wallet = userContext.wallet as string | undefined;
+      const address = userContext.address as string | undefined;
+      const ethAddress = userContext.ethAddress as string | undefined;
       
-      const identifier = verifications?.[0] || primaryWallet || context.user.fid;
+      const identifier = verifications?.[0] || primaryWallet || wallet || address || ethAddress || context.user.fid;
       
-      console.log('Using identifier for API calls:', identifier);
+      console.log('Wallet detection results:');
+      console.log('- verifications[0]:', verifications?.[0]);
+      console.log('- primaryWallet:', primaryWallet);
+      console.log('- wallet:', wallet);
+      console.log('- address:', address);
+      console.log('- ethAddress:', ethAddress);
+      console.log('- Final identifier used:', identifier);
+      console.log('- Type of identifier:', typeof identifier);
       
       const userData = await fetchUserData(identifier);
       console.log('User data loaded:', userData);

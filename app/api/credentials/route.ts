@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
     const fid = searchParams.get('fid');
     const wallet = searchParams.get('wallet');
     
+    console.log('=== Credentials API Debug ===');
+    console.log('Request URL:', request.url);
+    console.log('Search params:', Object.fromEntries(searchParams.entries()));
+    console.log('FID parameter:', fid);
+    console.log('Wallet parameter:', wallet);
+    console.log('============================');
+    
     if (!fid && !wallet) {
       return NextResponse.json({ error: 'Either FID or wallet parameter is required' }, { status: 400 });
     }
@@ -66,6 +73,8 @@ export async function GET(request: NextRequest) {
     const accountSource = wallet ? 'wallet' : 'farcaster';
     
     console.log(`Using identifier: ${identifier}, account_source: ${accountSource}`);
+    console.log(`Identifier type: ${typeof identifier}`);
+    console.log(`Identifier length: ${identifier?.toString().length}`);
 
     // Try multiple slugs to find Creator Coin Market Cap
     const slugsToTry = ['zora', 'talent', 'ethereum', 'coinbase', 'opensea', 'base'];
@@ -75,6 +84,7 @@ export async function GET(request: NextRequest) {
       try {
         const url = `https://api.talentprotocol.com/credentials?id=${identifier}&account_source=${accountSource}&slug=${slug}`;
         console.log(`Trying: ${accountSource}/${slug} with identifier: ${identifier}`);
+        console.log(`Full API URL: ${url}`);
         
         const response = await fetch(url, {
           headers: {
@@ -83,9 +93,12 @@ export async function GET(request: NextRequest) {
           },
         });
 
+        console.log(`Response status: ${response.status}`);
+        console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+
         if (response.ok) {
           const data = await response.json() as CredentialsResponse;
-          console.log(`Response for ${accountSource}/${slug}:`, data);
+          console.log(`Response for ${accountSource}/${slug}:`, JSON.stringify(data, null, 2));
           
           // Collect all credentials for debugging
           if (data.credentials && data.credentials.length > 0) {
@@ -103,6 +116,10 @@ export async function GET(request: NextRequest) {
             console.log(`Found Creator Coin Market Cap in ${accountSource}/${slug}`);
             return NextResponse.json(data);
           }
+        } else {
+          console.log(`API error for ${slug}: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.log(`Error response body:`, errorText);
         }
       } catch (error) {
         console.log(`Error with ${accountSource}/${slug}:`, error);
