@@ -38,14 +38,8 @@ export function CreatorScoreProfile() {
       console.log('User displayName:', context.user.displayName);
       console.log('User pfpUrl:', context.user.pfpUrl);
       console.log('All user properties:', Object.keys(context.user));
-      console.log('User verifications:', (context.user as any).verifications);
-      console.log('User primaryWallet:', (context.user as any).primaryWallet);
-      console.log('User wallet:', (context.user as any).wallet);
-      console.log('User address:', (context.user as any).address);
-      console.log('User ethAddress:', (context.user as any).ethAddress);
-      console.log('================================');
       
-      // Try to get wallet address from context, fallback to FID
+      // Safely access potential wallet properties
       const userContext = context.user as Record<string, unknown>;
       const verifications = userContext.verifications as string[] | undefined;
       const primaryWallet = userContext.primaryWallet as string | undefined;
@@ -53,6 +47,14 @@ export function CreatorScoreProfile() {
       const address = userContext.address as string | undefined;
       const ethAddress = userContext.ethAddress as string | undefined;
       
+      console.log('User verifications:', verifications);
+      console.log('User primaryWallet:', primaryWallet);
+      console.log('User wallet:', wallet);
+      console.log('User address:', address);
+      console.log('User ethAddress:', ethAddress);
+      console.log('================================');
+      
+      // Try to get wallet address from context, fallback to FID
       const identifier = verifications?.[0] || primaryWallet || wallet || address || ethAddress || context.user.fid;
       
       console.log('Wallet detection results:');
@@ -96,7 +98,7 @@ export function CreatorScoreProfile() {
     } finally {
       setLoading(false);
     }
-  }, [context?.user]);
+  }, [context]);
 
   useEffect(() => {
     if (context?.user) {
