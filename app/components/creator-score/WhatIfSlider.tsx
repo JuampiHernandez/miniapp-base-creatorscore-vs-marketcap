@@ -57,8 +57,8 @@ export default function WhatIfSlider({
   }, [creatorScore, marketCap, currentRatio, onSimulation]);
 
   const getCategoryFromRatio = (ratio: number) => {
-    if (ratio < 0.001) return 'undervalued';
-    if (ratio > 0.01) return 'overvalued';
+    if (ratio < 0.5) return 'undervalued';
+    if (ratio > 2.0) return 'overvalued';
     return 'balanced';
   };
 
@@ -76,8 +76,8 @@ export default function WhatIfSlider({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        🎮 What If Simulator
+      <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+        What If Simulator
       </h3>
       
       {/* Creator Score Slider */}
@@ -149,18 +149,7 @@ export default function WhatIfSlider({
           </div>
         </div>
         
-        <div className="mt-3 text-center">
-          <div className="text-sm text-gray-600">Simulation Status</div>
-          <div className={`text-sm font-medium ${
-            getChangeType(currentRatio, simulatedRatio) === 'improved' ? 'text-green-600' :
-            getChangeType(currentRatio, simulatedRatio) === 'worsened' ? 'text-red-600' :
-            'text-gray-600'
-          }`}>
-            {getChangeType(currentRatio, simulatedRatio) === 'improved' ? '📈 Improved' :
-             getChangeType(currentRatio, simulatedRatio) === 'worsened' ? '📉 Worsened' :
-             '➡️ No Change'}
-          </div>
-        </div>
+
       </div>
 
       {/* Reset Button */}
@@ -171,7 +160,7 @@ export default function WhatIfSlider({
         }}
         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
       >
-        🔄 Reset to Current Values
+        Reset to Current Values
       </button>
     </div>
   );

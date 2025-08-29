@@ -1,13 +1,15 @@
 import { RatioAnalysis, SimulationResult } from '../types/creator-score';
 
 export const RATIO_THRESHOLDS = {
-  UNDERVALUED: 0.0005,  // 0.5‰ - High score, low market cap = undervalued
-  BALANCED: 0.002,       // 2‰ - Fair valuation
-  OVERVALUED: 0.005      // 5‰ - Low score, high market cap = overvalued
+  UNDERVALUED: 0.5,      // 0.5 - High score, low market cap = undervalued
+  BALANCED: 2.0,         // 2.0 - Fair valuation
+  OVERVALUED: 5.0        // 5.0 - Low score, high market cap = overvalued
 } as const;
 
 export function calculateRatio(marketCap: number, creatorScore: number): number {
   if (creatorScore === 0) return Infinity;
+  // We want: low ratio = undervalued, high ratio = overvalued
+  // So: market cap / creator score makes sense
   return marketCap / creatorScore;
 }
 
