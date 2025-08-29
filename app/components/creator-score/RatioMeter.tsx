@@ -32,9 +32,8 @@ export default function RatioMeter({ ratioAnalysis, simulationResult }: RatioMet
 
   // Calculate meter position (0-100%)
   const getMeterPosition = () => {
-    // Normalize ratio to 0-100% scale
-    // 0.001 = 0%, 0.01 = 100%
-    const normalizedRatio = Math.max(0, Math.min(1, (currentRatio - 0.001) / (0.01 - 0.001)));
+    // Use the actual ratio thresholds: 0.002 = 0%, 0.01 = 100%
+    const normalizedRatio = Math.max(0, Math.min(1, (currentRatio - 0.002) / (0.01 - 0.002)));
     return normalizedRatio * 100;
   };
 
@@ -79,13 +78,13 @@ export default function RatioMeter({ ratioAnalysis, simulationResult }: RatioMet
           
           {/* Threshold Lines */}
           <div className="absolute top-0 h-full w-0.5 bg-green-600 left-[0%]" />
-          <div className="absolute top-0 h-full w-0.5 bg-yellow-600 left-[50%]" />
+          <div className="absolute top-0 h-full w-0.5 bg-yellow-600 left-[37.5%]" />
           <div className="absolute top-0 h-full w-0.5 bg-red-600 left-[100%]" />
         </div>
         
         <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>0.001</span>
-          <span>0.0055</span>
+          <span>0.002</span>
+          <span>0.005</span>
           <span>0.01</span>
         </div>
       </div>
