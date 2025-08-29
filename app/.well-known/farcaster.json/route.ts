@@ -1,10 +1,13 @@
 function withValidProperties(
-  properties: Record<string, undefined | string | string[]>,
+  properties: Record<string, undefined | string | string[] | boolean>,
 ) {
   return Object.fromEntries(
     Object.entries(properties).filter(([key, value]) => {
       if (Array.isArray(value)) {
         return value.length > 0;
+      }
+      if (typeof value === 'boolean') {
+        return true; // Always include boolean values
       }
       return !!value;
     }),
@@ -43,7 +46,7 @@ export async function GET() {
       ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Creator Score vs Market Cap",
       ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Analyze if your creator coin is undervalued, balanced, or overvalued",
       ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || `${URL}/hero.png`,
-      noindex: "false", // Set to "true" for development, "false" for production
+      noindex: false, // Set to true for development, false for production
     }),
   });
 }
