@@ -1,6 +1,7 @@
 export interface CreatorScore {
   score: number;
-  timestamp: string;
+  slug: string;
+  lastCalculatedAt: string;
   source: 'talent-api';
 }
 

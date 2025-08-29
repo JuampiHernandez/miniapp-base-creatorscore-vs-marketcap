@@ -1,73 +1,58 @@
-import { TalentApiResponse, CredentialsResponse, Credential } from '../types/creator-score';
+import { CreatorScore, TalentApiResponse, CredentialsResponse, Credential } from '../types/creator-score';
 
 // Function that uses our server-side API route for creator score
-export async function fetchCreatorScoreViaApi(fid: number): Promise<TalentApiResponse> {
+export async function fetchCreatorScoreViaApi(identifier: number | string): Promise<CreatorScore | null> {
   try {
-    console.log('Fetching creator score via API route for FID:', fid);
-    
-    const response = await fetch(`/api/creator-score?fid=${fid}`);
-    
+    const response = await fetch(`/api/creator-score?${typeof identifier === 'string' ? 'wallet' : 'fid'}=${identifier}`);
     if (!response.ok) {
-      throw new Error(`API route error: ${response.status} ${response.statusText}`);
+      console.error('Creator score API error:', response.status);
+      return null;
     }
     
-    const result = await response.json();
-    console.log('Creator score result:', result);
+    const data = await response.json();
+    console.log('Creator score API response:', data);
     
-    if (result.success && result.data?.score?.points) {
+    // Handle the new response format
+    if (data.score && data.score.points !== undefined) {
       return {
-        success: true,
-        data: {
-          creatorScore: result.data.score.points,
-        },
+        score: data.score.points,
+        slug: data.score.slug || 'creator_score',
+        lastCalculatedAt: data.score.last_calculated_at,
+        source: 'talent-api',
       };
-    } else {
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching creator score via API:', error);
+    return null;
+  }
+}
+
+// Function that uses our server-side API route for credentials
+export async function fetchCredentialsViaApi(identifier: number | string, slug: string): Promise<CredentialsResponse> {
+  try {
+    const response = await fetch(`/api/credentials?${typeof identifier === 'string' ? 'wallet' : 'fid'}=${identifier}`);
+    if (!response.ok) {
+      console.error('Credentials API error:', response.status);
       return {
         success: false,
-        error: 'Invalid response from API route',
+        error: `API route error: ${response.status}`,
       };
     }
+    
+    const data = await response.json();
+    console.log('Credentials result:', data);
+    
+    return {
+      success: true,
+      data: data,
+    };
   } catch (error) {
     console.error('Error fetching via API route:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch via API route',
-    };
-  }
-}
-
-// Function to fetch credentials (including market cap) via API route
-export async function fetchCredentialsViaApi(fid: number, slug: string = 'zora'): Promise<CredentialsResponse> {
-  try {
-    console.log('Fetching credentials via API route for FID:', fid, 'slug:', slug);
-    
-    const response = await fetch(`/api/credentials?fid=${fid}&slug=${slug}`);
-    
-    if (!response.ok) {
-      throw new Error(`API route error: ${response.status} ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('Credentials result:', result);
-    
-    if (result.success && result.data?.credentials) {
-      return {
-        success: true,
-        data: {
-          credentials: result.data.credentials,
-        },
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Invalid response from API route',
-      };
-    }
-  } catch (error) {
-    console.error('Error fetching credentials via API route:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch credentials via API route',
     };
   }
 }
@@ -101,14 +86,27 @@ export function extractMarketCapFromCredentials(credentials: Credential[]): { va
 }
 
 // Main function that uses the server-side API route for creator score
-export async function fetchCreatorScore(fid: number): Promise<TalentApiResponse> {
+export async function fetchCreatorScore(identifier: number | string): Promise<TalentApiResponse> {
   try {
-    console.log('Attempting to fetch creator score for FID:', fid);
+    console.log('Attempting to fetch creator score for identifier:', identifier);
     
     // Use the server-side API route
-    const result = await fetchCreatorScoreViaApi(fid);
+    const result = await fetchCreatorScoreViaApi(identifier);
     console.log('Creator score result:', result);
-    return result;
+    
+    if (result) {
+      return {
+        success: true,
+        data: {
+          creatorScore: result.score,
+        },
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Failed to fetch creator score',
+      };
+    }
     
   } catch (error) {
     console.warn('Falling back to mock data:', error);
@@ -123,12 +121,12 @@ export async function fetchCreatorScore(fid: number): Promise<TalentApiResponse>
 }
 
 // Main function to fetch market cap data
-export async function fetchMarketCap(fid: number): Promise<{ success: boolean; data?: { marketCap: number; readableValue: string; unitOfMeasure: string }; error?: string }> {
+export async function fetchMarketCap(identifier: number | string): Promise<{ success: boolean; data?: { marketCap: number; readableValue: string; unitOfMeasure: string }; error?: string }> {
   try {
-    console.log('Attempting to fetch market cap for FID:', fid);
+    console.log('Attempting to fetch market cap for identifier:', identifier);
     
     // Use the server-side API route for credentials
-    const result = await fetchCredentialsViaApi(fid, 'zora');
+    const result = await fetchCredentialsViaApi(identifier, 'zora');
     
     if (result.success && result.data?.credentials) {
       const marketCapData = extractMarketCapFromCredentials(result.data.credentials);

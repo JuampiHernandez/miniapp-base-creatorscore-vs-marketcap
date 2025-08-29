@@ -1,57 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TALENT_API_BASE_URL = 'https://api.talentprotocol.com/score';
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get('fid');
+    const wallet = searchParams.get('wallet');
     
-    if (!fid) {
-      return NextResponse.json(
-        { error: 'FID parameter is required' },
-        { status: 400 }
-      );
+    if (!fid && !wallet) {
+      return NextResponse.json({ error: 'Either FID or wallet parameter is required' }, { status: 400 });
     }
 
     const apiKey = process.env.TALENT_API_KEY;
-    
     if (!apiKey) {
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+    }
+
+    // Use wallet if provided, otherwise use FID
+    const identifier = wallet || fid;
+    const accountSource = wallet ? 'wallet' : 'farcaster';
+    
+    console.log(`Using identifier: ${identifier}, account_source: ${accountSource}`);
+    
+    try {
+      const url = `https://api.talentprotocol.com/score?id=${identifier}&account_source=${accountSource}&scorer_slug=creator_score`;
+      console.log(`Fetching creator score: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-API-KEY': apiKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Creator score response:`, data);
+        
+        // Check if we have valid score data
+        if (data.score && data.score.points !== undefined) {
+          console.log(`Found creator score:`, data.score.points);
+          return NextResponse.json(data);
+        }
+      }
+      
+      // If no valid response found, return error
+      console.log('No valid creator score found');
       return NextResponse.json(
-        { error: 'Talent API key not configured' },
+        { error: 'Creator score not found' },
+        { status: 404 }
+      );
+      
+    } catch (error) {
+      console.error('Error fetching creator score:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch creator score' },
         { status: 500 }
       );
     }
-
-    const url = `${TALENT_API_BASE_URL}?id=${fid}&account_source=farcaster&scorer_slug=creator_score`;
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-API-KEY': apiKey,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Talent API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    return NextResponse.json({
-      success: true,
-      data: data
-    });
-
   } catch (error) {
-    console.error('Error fetching creator score:', error);
-    
+    console.error('Error in creator score API:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch creator score' 
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -53,16 +53,18 @@ export async function fetchMarketCapFromMock(fid: number): Promise<TalentApiResp
 }
 
 // Main function that tries real API first, falls back to mock
-export async function fetchUserData(fid: number): Promise<{
+export async function fetchUserData(identifier: number | string): Promise<{
   creatorScore?: CreatorScore;
   marketCap?: MarketCap;
 }> {
   try {
+    console.log('Fetching user data for identifier:', identifier);
+    
     // Try to get creator score from Talent API first
-    const scoreResponse = await fetchCreatorScore(fid);
+    const scoreResponse = await fetchCreatorScore(identifier);
     
     // Try to get market cap from Talent API credentials endpoint
-    const marketCapResponse = await fetchMarketCap(fid);
+    const marketCapResponse = await fetchMarketCap(identifier);
 
     const result: {
       creatorScore?: CreatorScore;
@@ -72,7 +74,8 @@ export async function fetchUserData(fid: number): Promise<{
     if (scoreResponse.success && scoreResponse.data?.creatorScore) {
       result.creatorScore = {
         score: scoreResponse.data.creatorScore,
-        timestamp: new Date().toISOString(),
+        slug: 'creator_score',
+        lastCalculatedAt: new Date().toISOString(),
         source: 'talent-api',
       };
     }
@@ -93,8 +96,8 @@ export async function fetchUserData(fid: number): Promise<{
     console.error('Error fetching user data:', error);
     
     // Fallback to mock data if everything fails
-    const mockScoreResponse = await fetchCreatorScoreFromMock(fid);
-    const mockMarketCapResponse = await fetchMarketCapFromMock(fid);
+    const mockScoreResponse = await fetchCreatorScoreFromMock(1);
+    const mockMarketCapResponse = await fetchMarketCapFromMock(1);
 
     const result: {
       creatorScore?: CreatorScore;
@@ -104,7 +107,8 @@ export async function fetchUserData(fid: number): Promise<{
     if (mockScoreResponse.success && mockScoreResponse.data?.creatorScore) {
       result.creatorScore = {
         score: mockScoreResponse.data.creatorScore,
-        timestamp: new Date().toISOString(),
+        slug: 'creator_score',
+        lastCalculatedAt: new Date().toISOString(),
         source: 'talent-api',
       };
     }

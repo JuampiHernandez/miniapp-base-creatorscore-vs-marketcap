@@ -30,7 +30,18 @@ export function CreatorScoreProfile() {
         console.log('Loading user data for FID:', context.user.fid);
         console.log('Environment check - API key exists:', !!process.env.NEXT_PUBLIC_TALENT_API_KEY);
 
-        const userData = await fetchUserData(context.user.fid);
+        // Get user data using FID or wallet address
+        console.log('Farcaster context user:', context.user);
+        console.log('Available user properties:', Object.keys(context.user));
+        
+        // Try to get wallet address from context, fallback to FID
+        const identifier = (context.user as any).verifications?.[0] || 
+                          (context.user as any).primaryWallet || 
+                          context.user.fid;
+        
+        console.log('Using identifier for API calls:', identifier);
+        
+        const userData = await fetchUserData(identifier);
         console.log('User data loaded:', userData);
         
         const profile: UserProfile = {
@@ -41,13 +52,20 @@ export function CreatorScoreProfile() {
           ...userData,
         };
 
+        console.log('Profile created:', profile);
         setUserProfile(profile);
 
         // Calculate ratio if we have both values
         if (userData.creatorScore && userData.marketCap) {
+          console.log('Both values available, calculating ratio...');
           const ratio = userData.marketCap.value / userData.creatorScore.score;
           const analysis = analyzeRatio(ratio);
           setRatioAnalysis(analysis);
+        } else {
+          console.log('Missing data:', { 
+            creatorScore: !!userData.creatorScore, 
+            marketCap: !!userData.marketCap 
+          });
         }
       } catch (err) {
         console.error('Error in loadUserData:', err);
